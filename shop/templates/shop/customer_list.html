@@ -1,0 +1,60 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+<div class="row">
+    <!-- নতুন কাস্টমার যোগ করার ফর্ম -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm p-3">
+            <h4 class="text-primary mb-3">নতুন কাস্টমার যোগ করুন</h4>
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary w-100 fw-bold">কাস্টমার সংরক্ষণ করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- কাস্টমার তালিকা ও বাকি খাতা -->
+    <div class="col-md-8">
+        <div class="card shadow-sm p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h4 class="text-secondary m-0">কাস্টমার ও বাকি খাতা</h4>
+                <form method="GET" class="d-flex">
+                    <input type="text" name="q" value="{{ query }}" placeholder="নাম বা ফোন দিয়ে খুঁজুন..." class="form-control form-control-sm me-2">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">সারર્ચ</button>
+                </form>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>নাম</th>
+                            <th>মোবাইল নম্বর</th>
+                            <th>বর্তমান বাকি</th>
+                            <th>অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in customers %}
+                        <tr>
+                            <td class="fw-bold">{{ c.name }}</td>
+                            <td>{{ c.phone }}</td>
+                            <td class="fw-bold {% if c.total_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ৳{{ c.total_due }}
+                            </td>
+                            <td>
+                                <a href="{% url 'customer_detail' c.id %}" class="btn btn-sm btn-info fw-bold text-white">লেজার দেখুন</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">কোনো কাস্টমার পাওয়া যায়নি।</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

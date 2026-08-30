@@ -1,0 +1,73 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+<div class="mb-3">
+    <a href="{% url 'customer_list' %}" class="btn btn-secondary btn-sm fw-bold">⬅ কাস্টমার লিস্টে ফিরে যান</a>
+</div>
+
+<div class="row">
+    <!-- কাস্টমার ইনফো ও বাকি এন্ট্রি ফর্ম -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm p-3 mb-3">
+            <h4 class="text-primary">{{ customer.name }}</h4>
+            <p class="mb-1 text-muted">ফোন: <strong>{{ customer.phone|default:"দেওয়া হয়নি" }}</strong></p>
+            <p class="mb-2 text-muted">ঠিকানা: {{ customer.address|default:"দেওয়া হয়নি" }}</p>
+            <hr>
+            <h5 class="fw-bold">মোট বাকি: 
+                <span class="{% if customer.total_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                    ৳{{ customer.total_due }}
+                </span>
+            </h5>
+        </div>
+
+        <div class="card shadow-sm p-3">
+            <h5 class="text-secondary mb-3">লেনদেন এন্ট্রি করুন</h5>
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-success w-100 fw-bold">এন্ট্রি সেভ করুন</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- কাস্টমারের লেনদেনের হিস্ট্রি টেবিল -->
+    <div class="col-md-8">
+        <div class="card shadow-sm p-3">
+            <h4 class="text-secondary mb-3">লেনদেনের ইতিহাস (Ledger)</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>তারিখ</th>
+                            <th>ধরণ</th>
+                            <th>পণ্য / সেবার বিবরণ</th>
+                            <th>টাকার পরিমাণ</th>
+                            <th>নোট</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transactions %}
+                        <tr>
+                            <td>{{ t.created_at }}</td>
+                            <td>
+                                {% if t.trans_type == 'due_given' %}
+                                    <span class="badge bg-danger">বাকি দেওয়া</span>
+                                {% else %}
+                                    <span class="badge bg-success">টাকা পরিশোধ</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ t.item_name|default:"-" }}</td>
+                            <td class="fw-bold">৳{{ t.amount }}</td>
+                            <td>{{ t.note|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">কোনো লেনদেন রেকর্ড করা হয়নি।</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

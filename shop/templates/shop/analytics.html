@@ -1,0 +1,236 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <h2 class="text-primary fw-bold">মাসিক ও বাৎসরিক রিপোর্ট অ্যানালিটিক্স</h2>
+    
+    <!-- মাস বা বছর ফিল্টার ফর্ম -->
+    <div class="d-flex align-items-center gap-3">
+        <form method="GET" class="d-flex align-items-center gap-2">
+            <label class="fw-bold small">মাস:</label>
+            <input type="month" name="month" value="{{ selected_month }}" class="form-control form-control-sm" onchange="this.form.submit()">
+        </form>
+
+        <form method="GET" class="d-flex align-items-center gap-2">
+            <label class="fw-bold small">বছর:</label>
+            <input type="number" name="year" placeholder="YYYY" value="{{ selected_year }}" class="form-control form-control-sm" style="width: 100px;" onchange="this.form.submit()">
+        </form>
+    </div>
+</div>
+
+<div class="alert alert-info shadow-sm mb-4">
+    নির্বাচিত রিপোর্ট মোড: <strong>{{ period_title }}</strong>
+</div>
+
+<!-- সারসংক্ষেপ কার্ডসমূহ -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary p-3 shadow-sm">
+            <h5>মোট পণ্য বিক্রি</h5>
+            <h3>৳{{ total_sales }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info p-3 shadow-sm">
+            <h5>সার্ভিস ও এমএফএস আয়</h5>
+            <h3>৳{{ total_service|add:total_mfs }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-danger p-3 shadow-sm">
+            <h5>মোট খরচ</h5>
+            <h3>৳{{ total_expense }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <!-- লাভ হলে সবুজ, ক্ষতি হলে কালো এবং ডাইনামিক লেখা -->
+        <div class="card text-white {% if total_profit >= 0 %}bg-success{% else %}bg-dark{% endif %} p-3 shadow-sm">
+            <h5>{% if total_profit >= 0 %}নিট লাভ{% else %}নিট ক্ষতি{% endif %}</h5>
+            <h3>৳{{ total_profit }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- লেনদেন ও বিক্রির বিস্তারিত তালিকা টেবিল -->
+<h4 class="mb-3 text-secondary">লেনদেন ও বিক্রির বিস্তারিত তালিকা</h4>
+<table class="table table-bordered table-striped bg-white shadow-sm mb-5">
+    <thead class="table-dark">
+        <tr>
+            <th>তারিখ</th>
+            <th>বিবরণ / পণ্যের নাম</th>
+            <th>লেনদেনের ধরণ</th>
+            <th>পরিমাণ</th>
+            <th>বিক্রয়/আয়</th>
+            <th>লাভ / ক্ষতি</th>
+            <th>অ্যাকশন</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in transactions %}
+        <tr>
+            <td>{{ t.created_at }}</td>
+            <td>{% if t.product %}{{ t.product.name }}{% else %}{{ t.service_name|default:t.note }}{% endif %}</td>
+            <td>{{ t.get_trans_type_display }}</td>
+            <td>{{ t.quantity }} টি</td>
+            <td>৳{{ t.amount }}</td>
+            <td class="fw-bold {% if t.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                ৳{{ t.profit }}
+            </td>
+            <td>
+                <a href="{% url 'edit_transaction' t.id %}" class="btn btn-sm btn-warning fw-bold">✏️ এডিট</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted">এই সময়ে কোনো লেনদেন পাওয়া যায়নি।</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- খরচের তালিকা টেবিল -->
+<h4 class="mb-3 text-danger">খরচসমূহ</h4>
+<table class="table table-bordered table-striped bg-white shadow-sm mb-5">
+    <thead class="table-secondary">
+        <tr>
+            <th>তারিখ</th>
+            <th>খরচের খাত</th>
+            <th>টাকার পরিমাণ</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in expenses %}
+        <tr>
+            <td>{{ e.date }}</td>
+            <td>{{ e.title }}</td>
+            <td>৳{{ e.amount }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3" class="text-center text-muted">এই সময়ে কোনো খরচ এন্ট্রি করা হয়নি।</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Analysis Report বাটন (ডানপাশে নিচে) -->
+<div class="d-flex justify-content-end mb-5">
+    <button type="button" id="analysisDoneBtn" class="btn btn-dark fw-bold px-4 py-2 shadow-sm" onclick="completeAnalysis()">
+        📊 Analysis Report
+    </button>
+</div>
+
+<!-- অ্যানালিটিক্স রিপোর্ট কমপ্লিট হওয়ার পর নিচের অংশটি ওপেন হবে -->
+<div id="analysisResultSection" style="display: none;" class="card shadow-lg p-4 mb-5 border-success">
+    <div id="printableArea">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-dark">অ্যানালিটিক্স সামারি রিপোর্ট</h3>
+            <p class="text-muted mb-1">সময়কাল: <strong>{{ period_title }}</strong></p>
+            <hr>
+        </div>
+
+        <h5 class="text-secondary mb-3">১. মোট বিক্রয় ও আয় বিবরণী:</h5>
+        <table class="table table-bordered mb-4">
+            <thead class="table-light">
+                <tr>
+                    <th>তারিখ</th>
+                    <th>বিবরণ</th>
+                    <th>ধরণ</th>
+                    <th>পরিমাণ</th>
+                    <th>মূল্য</th>
+                    <th>লাভ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.created_at }}</td>
+                    <td>{% if t.product %}{{ t.product.name }}{% else %}{{ t.service_name|default:t.note }}{% endif %}</td>
+                    <td>{{ t.get_trans_type_display }}</td>
+                    <td>{{ t.quantity }} টি</td>
+                    <td>৳{{ t.amount }}</td>
+                    <td>৳{{ t.profit }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">কোনো ডাটা নেই</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h5 class="text-danger mb-3">২. খরচসমূহ:</h5>
+        <table class="table table-bordered mb-4">
+            <thead class="table-light">
+                <tr>
+                    <th>তারিখ</th>
+                    <th>খরচের খাত</th>
+                    <th>পরিমাণ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in expenses %}
+                <tr>
+                    <td>{{ e.date }}</td>
+                    <td>{{ e.title }}</td>
+                    <td>৳{{ e.amount }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center">কোনো খরচ নেই</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="card bg-light p-3 border-0">
+            <h4 class="fw-bold text-end {% if total_profit >= 0 %}text-success{% else %}text-dark{% endif %}">
+                {% if total_profit >= 0 %}নিট লাভ{% else %}নিট ক্ষতি{% endif %}: ৳{{ total_profit }}
+            </h4>
+        </div>
+    </div>
+
+    <!-- ডাউনলোড অপশনসমূহ -->
+    <div class="d-flex justify-content-end gap-3 mt-4">
+        <a href="{% url 'export_excel' %}?{% if selected_month %}month={{ selected_month }}{% elif selected_year %}year={{ selected_year }}{% endif %}" class="btn btn-success fw-bold px-4">
+            📥 Excel ডাউনলোড করুন
+        </a>
+        <button onclick="printImageReport()" class="btn btn-secondary fw-bold px-4">
+            🖼️ Image / Print ডাউনলোড করুন
+        </button>
+    </div>
+</div>
+
+<script>
+const analysisKey = "analysis_done_{{ selected_month }}_{{ selected_year }}";
+
+window.onload = function() {
+    if (localStorage.getItem(analysisKey) === "true") {
+        showAnalysisUI();
+    }
+};
+
+function completeAnalysis() {
+    localStorage.setItem(analysisKey, "true");
+    showAnalysisUI();
+}
+
+function showAnalysisUI() {
+    var btn = document.getElementById("analysisDoneBtn");
+    btn.className = "btn btn-success fw-bold px-4 py-2 shadow-sm";
+    btn.innerHTML = "✅ Analysis Report (Active)";
+    
+    var resultSection = document.getElementById("analysisResultSection");
+    resultSection.style.display = "block";
+}
+
+function printImageReport() {
+    var printContents = document.getElementById("printableArea").innerHTML;
+    var originalContents = document.body.innerHTML;
+    
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    location.reload();
+}
+</script>
+{% endblock %}

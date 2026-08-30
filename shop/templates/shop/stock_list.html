@@ -1,0 +1,43 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary fw-bold">পণ্যের স্টক তালিকা (Stock List)</h2>
+        <!-- প্রয়োজনে পণ্য যোগ করার লিংক বা বাটন এখানে রাখতে পারেন -->
+    </div>
+
+    <!-- স্টক তালিকা টেবিল -->
+    <table class="table table-bordered table-striped bg-white shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>পণ্যের নাম</th>
+                <th>ক্যাটাগরি</th>
+                <th>ক্রয় মূল্য</th>
+                <th>বিক্রয় মূল্য</th>
+                <th>স্টক পরিমাণ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <!-- স্টক ৫ বা তার কম হলে রো লাল রঙে হাইলাইট হবে -->
+            <tr class="{% if product.stock_quantity <= 5 %}table-danger{% endif %}">
+                <td>{{ product.name }}</td>
+                <td>{% if product.category %}{{ product.category.name }}{% else %}N/A{% endif %}</td>
+                <td>৳{{ product.buy_price }}</td>
+                <td>৳{{ product.sell_price }}</td>
+                <td class="fw-bold">
+                    {{ product.stock_quantity }} টি 
+                    {% if product.stock_quantity <= 5 %}
+                        <span class="badge bg-danger ms-2">Stock Low!</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">কোনো পণ্য পাওয়া যায়নি।</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
