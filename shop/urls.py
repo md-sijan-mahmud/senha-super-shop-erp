@@ -13,4 +13,5 @@ urlpatterns = [
     path('edit-transaction/<int:pk>/', views.edit_transaction, name='edit_transaction'),
     path('customers/', views.customer_list, name='customer_list'),
     path('customer/<int:pk>/', views.customer_detail, name='customer_detail'),
+    path('complete-shift/', views.complete_shift, name='complete_shift'),
 ]

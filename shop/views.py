@@ -313,3 +313,11 @@ def customer_detail(request, pk):
         'form': form,
     }
     return render(request, 'shop/customer_detail.html', context)
+
+
+def complete_shift(request):
+    if request.method == 'POST':
+        # এখানে শিফট ক্লোজ সংক্রান্ত কোনো স্ট্যাটাস বা ডাটা প্রসেস করতে পারেন
+        # আপাতত সফলভাবে শিফট শেষ হয়ে ড্যাশবোর্ডে রিডিক্ট করবে
+        return redirect('dashboard')
+    return redirect('dashboard')
